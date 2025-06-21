@@ -392,110 +392,49 @@
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const sounds = {};
         
-        // Create drum sounds with Web Audio API
-        function createDrumSounds() {
-            // Hi-hat
-            sounds.hihat = createHiHatSound();
-            
-            // Snare
-            sounds.snare = createSnareSound();
-            
-            // Tom
-            sounds.tom = createTomSound();
-        }
-        
-        function createHiHatSound() {
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.type = 'square';
-            oscillator.frequency.setValueAtTime(300, audioContext.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
-            
-            gainNode.gain.setValueAtTime(0.7, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            return { oscillator, gainNode };
-        }
-        
-        function createSnareSound() {
-            const noise = audioContext.createBufferSource();
-            const noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.5, audioContext.sampleRate);
-            const output = noiseBuffer.getChannelData(0);
-            
-            for (let i = 0; i < output.length; i++) {
-                output[i] = Math.random() * 2 - 1;
-            }
-            
-            noise.buffer = noiseBuffer;
-            
-            const noiseEnvelope = audioContext.createGain();
-            noiseEnvelope.gain.setValueAtTime(1, audioContext.currentTime);
-            noiseEnvelope.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-            
-            const oscillator = audioContext.createOscillator();
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
-            
-            const oscillatorEnvelope = audioContext.createGain();
-            oscillatorEnvelope.gain.setValueAtTime(0.7, audioContext.currentTime);
-            oscillatorEnvelope.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-            
-            noise.connect(noiseEnvelope);
-            noiseEnvelope.connect(audioContext.destination);
-            
-            oscillator.connect(oscillatorEnvelope);
-            oscillatorEnvelope.connect(audioContext.destination);
-            
-            return { noise, oscillator, noiseEnvelope, oscillatorEnvelope };
-        }
-        
-        function createTomSound() {
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(100, audioContext.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 0.5);
-            
-            gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            return { oscillator, gainNode };
-        }
-        
-        // Play sound function
-        function playSound(drumType, intensity = 1) {
-            // Clone the sound to allow overlapping
-            const now = audioContext.currentTime;
-            
-            switch(drumType) {
-                case 'hihat':
-                    const hihat = createHiHatSound();
-                    hihat.oscillator.start();
-                    hihat.oscillator.stop(now + 0.3);
-                    break;
-                    
-                case 'snare':
-                    const snare = createSnareSound();
-                    snare.noise.start();
-                    snare.oscillator.start();
-                    snare.noise.stop(now + 0.2);
-                    snare.oscillator.stop(now + 0.1);
-                    break;
-                    
-                case 'tom':
-                    const tom = createTomSound();
-                    tom.oscillator.start();
-                    tom.oscillator.stop(now + 0.5);
-                    break;
-            }
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+const sounds = {}; // Store AudioBuffers
+
+// Load audio files into buffers
+function loadSound(name, url) {
+    return fetch(url)
+        .then(response => response.arrayBuffer())
+        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+        .then(audioBuffer => {
+            sounds[name] = audioBuffer;
+        })
+        .catch(err => console.error(`Failed to load ${name}: ${err}`));
+}
+
+async function loadAllDrumSounds() {
+    await Promise.all([
+        loadSound('hihat', 'sounds/hihat.wav'),
+        loadSound('snare', 'sounds/snare.wav'),
+        loadSound('tom', 'sounds/tom.wav')
+    ]);
+    console.log('All drum sounds loaded');
+}
+
+// Play the loaded sound
+function playSound(drumType, intensity = 1) {
+    if (!sounds[drumType]) {
+        console.warn(`Sound ${drumType} not loaded`);
+        return;
+    }
+
+    const source = audioContext.createBufferSource();
+    source.buffer = sounds[drumType];
+
+    const gainNode = audioContext.createGain();
+    gainNode.gain.value = intensity;
+
+    source.connect(gainNode).connect(audioContext.destination);
+    source.start();
+}
+
+// Call this once on app load
+loadAllDrumSounds();
+
             
             // Visual feedback
             const pad = document.getElementById(`${drumType}-pad`);
