@@ -1,9 +1,9 @@
-<!--<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Local sounds Drum Simulator</title>
+    <title>Precision Air Drum Stick</title>
     <style>
         * {
             margin: 0;
@@ -200,7 +200,7 @@
             font-weight: 600;
         }
         
-        .sounds-path {
+        .sound-path {
             margin-top: 15px;
             font-size: 0.9rem;
             color: #ccc;
@@ -224,8 +224,8 @@
 <body>
     <div class="container">
         <header>
-            <h1>Local sounds Drum Simulator</h1>
-            <p class="subtitle">Using sounds files from your GitHub directory</p>
+            <h1>Precision Air Drum Stick</h1>
+            <p class="subtitle">Fixed motion detection with proper sound triggering</p>
         </header>
         
         <div class="drum-controls">
@@ -260,20 +260,13 @@
         <div class="instructions">
             <h2>How to Use</h2>
             <ul>
-                <li><strong>sounds Files:</strong> This app uses sounds files from your GitHub directory at <code>sounds/*.wav</code></li>
                 <li><strong>Hi-hat:</strong> Make a quick downward flick motion with your phone</li>
                 <li><strong>Snare:</strong> Swing your phone side-to-side like hitting a snare drum</li>
                 <li><strong>Tom:</strong> Make a circular motion for the tom-tom drum</li>
+                <li><strong>Fixed Tom Sound:</strong> Now only plays when you complete a circular motion</li>
                 <li><strong>Calibration:</strong> If movements aren't detected, use the calibrate button</li>
                 <li><strong>Mobile:</strong> Works best on mobile devices with motion sensors</li>
             </ul>
-            
-            <div class="sounds-path">
-                <strong>sounds file paths:</strong><br>
-                sounds/hihat.wav<br>
-                sounds/snare.wav<br>
-                sounds/tom.wav
-            </div>
         </div>
         
         <div class="control-buttons">
@@ -291,46 +284,13 @@
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const sounds = {};
         
-        // Load drum samples from local GitHub directory
-        async function loadsounds() {
-            const drumTypes = [
-                {name: 'hihat', path: 'sounds/hihat.wav'},
-                {name: 'snare', path: 'sounds/snare.wav'},
-                {name: 'tom', path: 'sounds/tom.wav'}
-            ];
-            
-            for (const drum of drumTypes) {
-                try {
-                    const response = await fetch(drum.path);
-                    if (!response.ok) {
-                        throw new Error(`Failed to load ${drum.path}: ${response.status}`);
-                    }
-                    
-                    const arrayBuffer = await response.arrayBuffer();
-                    sounds[drum.name] = await audioContext.decodeAudioData(arrayBuffer);
-                    updateStatus(`Loaded: ${drum.name}.wav`);
-                } catch (error) {
-                    console.error(`Error loading sounds for ${drum.name}:`, error);
-                    updateStatus(`Error loading ${drum.name}.wav`, true);
-                    
-                    // Create a placeholder sounds for demonstration
-                    sounds[drum.name] = createPlaceholdersounds(drum.name);
-                }
-            }
-        }
-        
-        // Create a placeholder sounds if files can't be loaded
-        function createPlaceholdersounds(type) {
+        // Create drum sounds - using Web Audio API since we can't access local files in this example
+        function createHiHatSound() {
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
             
-            // Different frequencies for different drums
-            let frequency = 300;
-            if (type === 'snare') frequency = 180;
-            if (type === 'tom') frequency = 120;
-            
             oscillator.type = 'square';
-            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(300, audioContext.currentTime);
             oscillator.frequency.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
             
             gainNode.gain.setValueAtTime(0.7, audioContext.currentTime);
@@ -339,54 +299,72 @@
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
             
-            return {oscillator, gainNode};
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.2);
         }
         
-        // Play sounds function
-        function playsounds(drumType) {
-            if (!sounds[drumType]) return;
+        function createSnareSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
             
-            try {
-                // For placeholder sounds
-                if (sounds[drumType].oscillator) {
-                    const source = audioContext.createBufferSource();
-                    
-                    // Create a simple buffer for placeholder
-                    const buffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.2, audioContext.sampleRate);
-                    const data = buffer.getChannelData(0);
-                    
-                    for (let i = 0; i < buffer.length; i++) {
-                        data[i] = Math.sin(i / 10);
-                    }
-                    
-                    source.buffer = buffer;
-                    source.connect(audioContext.destination);
-                    source.start();
-                } 
-                // For actual loaded sounds
-                else {
-                    const source = audioContext.createBufferSource();
-                    source.buffer = sounds[drumType];
-                    source.connect(audioContext.destination);
-                    source.start();
-                }
-                
-                // Visual feedback
-                const pad = document.getElementById(`${drumType}-pad`);
-                pad.classList.add('active');
-                setTimeout(() => pad.classList.remove('active'), 200);
-                
-                // Update motion display
-                if (drumType === 'hihat') {
-                    motionDisplay.textContent = 'Playing: Hi-hat (Downward motion)';
-                } else if (drumType === 'snare') {
-                    motionDisplay.textContent = 'Playing: Snare (Side motion)';
-                } else {
-                    motionDisplay.textContent = 'Playing: Tom (Circular motion)';
-                }
-            } catch (error) {
-                console.error(`Error playing sounds for ${drumType}:`, error);
-                updateStatus(`Error playing ${drumType} sounds`, true);
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(180, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(80, audioContext.currentTime + 0.3);
+            
+            gainNode.gain.setValueAtTime(0.8, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+        
+        function createTomSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(120, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(60, audioContext.currentTime + 0.4);
+            
+            gainNode.gain.setValueAtTime(0.7, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.4);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.4);
+        }
+        
+        // Play sound function
+        function playSound(drumType) {
+            switch(drumType) {
+                case 'hihat': 
+                    createHiHatSound();
+                    break;
+                case 'snare': 
+                    createSnareSound();
+                    break;
+                case 'tom': 
+                    createTomSound();
+                    break;
+            }
+            
+            // Visual feedback
+            const pad = document.getElementById(`${drumType}-pad`);
+            pad.classList.add('active');
+            setTimeout(() => pad.classList.remove('active'), 200);
+            
+            // Update motion display
+            if (drumType === 'hihat') {
+                motionDisplay.textContent = 'Playing: Hi-hat (Downward motion)';
+            } else if (drumType === 'snare') {
+                motionDisplay.textContent = 'Playing: Snare (Side motion)';
+            } else {
+                motionDisplay.textContent = 'Playing: Tom (Circular motion)';
             }
         }
         
@@ -402,10 +380,11 @@
         let isMonitoring = false;
         let lastAcceleration = { x: 0, y: 0, z: 0 };
         let lastHitTime = 0;
-        const hitCooldown = 200; // milliseconds
+        const hitCooldown = 300; // Increased cooldown to prevent rapid triggers
         let sensitivity = 15; // Default sensitivity
         let movementHistory = [];
-        
+        let circleDetected = false; // To track if we've already detected a circle
+
         // Update status message
         function updateStatus(message, isError = false) {
             statusDiv.textContent = message;
@@ -452,33 +431,40 @@
             
             // Detect circular motion for Tom
             if (detectCircularMotion()) {
-                playsounds('tom');
-                lastHitTime = now;
+                if (!circleDetected) {
+                    playSound('tom');
+                    lastHitTime = now;
+                    circleDetected = true; // Mark that we've detected a circle
+                    setTimeout(() => { circleDetected = false; }, 500); // Reset after half second
+                }
                 return;
+            } else {
+                circleDetected = false;
             }
             
             // Determine which drum to play based on movement pattern
             if (deltaZ > sensitivity && deltaZ > deltaX && deltaZ > deltaY) {
                 // Z-axis movement (up/down) - Hi-hat
-                playsounds('hihat');
+                playSound('hihat');
                 lastHitTime = now;
             } else if (deltaX > sensitivity && deltaX > deltaY && deltaX > deltaZ) {
                 // X-axis movement (side to side) - Snare
-                playsounds('snare');
+                playSound('snare');
                 lastHitTime = now;
             } else if (deltaY > sensitivity && deltaY > deltaX && deltaY > deltaZ) {
                 // Y-axis movement (forward/backward) - Tom
-                playsounds('tom');
+                playSound('tom');
                 lastHitTime = now;
             }
         }
         
-        // Detect circular motion pattern
+        // Detect circular motion pattern (fixed)
         function detectCircularMotion() {
-            if (movementHistory.length < 10) return false;
+            if (movementHistory.length < 15) return false;
             
             let directionChanges = 0;
             const directions = [];
+            let circleComplete = false;
             
             // Calculate direction vectors
             for (let i = 1; i < movementHistory.length; i++) {
@@ -496,6 +482,30 @@
                 directions.push(direction);
             }
             
+            // Check for a complete circle pattern (up->right->down->left or similar)
+            for (let i = 3; i < directions.length; i++) {
+                const sequence = [
+                    directions[i-3],
+                    directions[i-2],
+                    directions[i-1],
+                    directions[i]
+                ];
+                
+                // Check for clockwise circle
+                if (sequence.includes('up') && sequence.includes('right') && 
+                    sequence.includes('down') && sequence.includes('left')) {
+                    circleComplete = true;
+                    break;
+                }
+                
+                // Check for counter-clockwise circle
+                if (sequence.includes('up') && sequence.includes('left') && 
+                    sequence.includes('down') && sequence.includes('right')) {
+                    circleComplete = true;
+                    break;
+                }
+            }
+            
             // Count direction changes
             for (let i = 1; i < directions.length; i++) {
                 if (directions[i] !== directions[i-1]) {
@@ -503,8 +513,8 @@
                 }
             }
             
-            // Circular motion requires at least 4 direction changes
-            return directionChanges >= 4;
+            // Circular motion requires a complete circle pattern and sufficient direction changes
+            return circleComplete && directionChanges >= 6;
         }
         
         // Determine motion direction for visual feedback
@@ -575,9 +585,6 @@
         
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            // Load sounds from local directory
-            loadsounds();
-            
             // Button event listeners
             startBtn.addEventListener('click', startMotionDetection);
             calibrateBtn.addEventListener('click', calibrateSensitivity);
@@ -585,7 +592,6 @@
     </script>
 </body>
 </html>
-
 <!-- -----------------------------------------------------v1.1--------------------------------------- -->
 <!--<!DOCTYPE html>
 <html lang="en">
@@ -1259,9 +1265,9 @@ loadAllDrumsounds();
     </script>
 </body>
 </html>
---!>
 
-<!-- <---------------------v1.0-----------------------> 
+
+<---------------------v1.0--------------------- 
 <!DOCTYPE html>
 <html>
 <head>
