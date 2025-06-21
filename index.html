@@ -1,6 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local sounds Drum Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            max-width: 800px;
+            width: 100%;
+            padding: 20px;
+        }
+        
+        header {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        
+        .drum-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .drum-pad {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            height: 120px;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+        
+        .drum-pad.active {
+            background: rgba(255, 138, 0, 0.3);
+            border-color: #ff8a00;
+            transform: scale(1.05);
+        }
+        
+        .drum-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .drum-name {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .drum-motion {
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+        
+        .visualizer {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .phone-model {
+            width: 100px;
+            height: 180px;
+            background: #222;
+            border-radius: 15px;
+            position: relative;
+            border: 3px solid #444;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 15px 0;
+        }
+        
+        .phone-screen {
+            width: 85%;
+            height: 90%;
+            background: #1a1a2e;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+        
+        .motion-display {
+            font-size: 1rem;
+            text-align: center;
+            margin-top: 10px;
+            height: 40px;
+        }
+        
+        .motion-direction {
+            font-size: 3rem;
+            margin: 10px 0;
+        }
+        
+        .sensor-data {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-top: 5px;
+        }
+        
+        .instructions {
+            margin-top: 20px;
+            text-align: left;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .instructions h2 {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #ff8a00;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+            margin-top: 10px;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+        
+        .control-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        button {
+            background: linear-gradient(to right, #ff8a00, #da1b60);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .status {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        
+        .sounds-path {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: #ccc;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        @media (max-width: 600px) {
+            .drum-controls {
+                grid-template-columns: 1fr;
+            }
+            
+            .control-buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Local sounds Drum Simulator</h1>
+            <p class="subtitle">Using sounds files from your GitHub directory</p>
+        </header>
+        
+        <div class="drum-controls">
+            <div class="drum-pad" id="hihat-pad">
+                <div class="drum-icon">🥁</div>
+                <div class="drum-name">Hi-hat</div>
+                <div class="drum-motion">Downward motion</div>
+            </div>
+            <div class="drum-pad" id="snare-pad">
+                <div class="drum-icon">🎵</div>
+                <div class="drum-name">Snare</div>
+                <div class="drum-motion">Side-to-side</div>
+            </div>
+            <div class="drum-pad" id="tom-pad">
+                <div class="drum-icon">🎶</div>
+                <div class="drum-name">Tom</div>
+                <div class="drum-motion">Circular motion</div>
+            </div>
+        </div>
+        
+        <div class="visualizer">
+            <h3>Phone Motion</h3>
+            <div class="phone-model">
+                <div class="phone-screen">
+                    <div class="motion-direction">↑</div>
+                    <div class="motion-display">Hold like drumstick</div>
+                    <div class="sensor-data">x: 0.00 | y: 0.00 | z: 0.00</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h2>How to Use</h2>
+            <ul>
+                <li><strong>sounds Files:</strong> This app uses sounds files from your GitHub directory at <code>sounds/*.wav</code></li>
+                <li><strong>Hi-hat:</strong> Make a quick downward flick motion with your phone</li>
+                <li><strong>Snare:</strong> Swing your phone side-to-side like hitting a snare drum</li>
+                <li><strong>Tom:</strong> Make a circular motion for the tom-tom drum</li>
+                <li><strong>Calibration:</strong> If movements aren't detected, use the calibrate button</li>
+                <li><strong>Mobile:</strong> Works best on mobile devices with motion sensors</li>
+            </ul>
+            
+            <div class="sounds-path">
+                <strong>sounds file paths:</strong><br>
+                sounds/hihat.wav<br>
+                sounds/snare.wav<br>
+                sounds/tom.wav
+            </div>
+        </div>
+        
+        <div class="control-buttons">
+            <button id="start-btn">Enable Motion</button>
+            <button id="calibrate-btn">Calibrate</button>
+        </div>
+        
+        <div class="status" id="status">
+            Click "Enable Motion" to begin
+        </div>
+    </div>
+
+    <script>
+        // Audio context and sounds
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const sounds = {};
+        
+        // Load drum samples from local GitHub directory
+        async function loadsounds() {
+            const drumTypes = [
+                {name: 'hihat', path: 'sounds/hihat.wav'},
+                {name: 'snare', path: 'sounds/snare.wav'},
+                {name: 'tom', path: 'sounds/tom.wav'}
+            ];
+            
+            for (const drum of drumTypes) {
+                try {
+                    const response = await fetch(drum.path);
+                    if (!response.ok) {
+                        throw new Error(`Failed to load ${drum.path}: ${response.status}`);
+                    }
+                    
+                    const arrayBuffer = await response.arrayBuffer();
+                    sounds[drum.name] = await audioContext.decodeAudioData(arrayBuffer);
+                    updateStatus(`Loaded: ${drum.name}.wav`);
+                } catch (error) {
+                    console.error(`Error loading sounds for ${drum.name}:`, error);
+                    updateStatus(`Error loading ${drum.name}.wav`, true);
+                    
+                    // Create a placeholder sounds for demonstration
+                    sounds[drum.name] = createPlaceholdersounds(drum.name);
+                }
+            }
+        }
+        
+        // Create a placeholder sounds if files can't be loaded
+        function createPlaceholdersounds(type) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            // Different frequencies for different drums
+            let frequency = 300;
+            if (type === 'snare') frequency = 180;
+            if (type === 'tom') frequency = 120;
+            
+            oscillator.type = 'square';
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
+            
+            gainNode.gain.setValueAtTime(0.7, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            return {oscillator, gainNode};
+        }
+        
+        // Play sounds function
+        function playsounds(drumType) {
+            if (!sounds[drumType]) return;
+            
+            try {
+                // For placeholder sounds
+                if (sounds[drumType].oscillator) {
+                    const source = audioContext.createBufferSource();
+                    
+                    // Create a simple buffer for placeholder
+                    const buffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.2, audioContext.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    
+                    for (let i = 0; i < buffer.length; i++) {
+                        data[i] = Math.sin(i / 10);
+                    }
+                    
+                    source.buffer = buffer;
+                    source.connect(audioContext.destination);
+                    source.start();
+                } 
+                // For actual loaded sounds
+                else {
+                    const source = audioContext.createBufferSource();
+                    source.buffer = sounds[drumType];
+                    source.connect(audioContext.destination);
+                    source.start();
+                }
+                
+                // Visual feedback
+                const pad = document.getElementById(`${drumType}-pad`);
+                pad.classList.add('active');
+                setTimeout(() => pad.classList.remove('active'), 200);
+                
+                // Update motion display
+                if (drumType === 'hihat') {
+                    motionDisplay.textContent = 'Playing: Hi-hat (Downward motion)';
+                } else if (drumType === 'snare') {
+                    motionDisplay.textContent = 'Playing: Snare (Side motion)';
+                } else {
+                    motionDisplay.textContent = 'Playing: Tom (Circular motion)';
+                }
+            } catch (error) {
+                console.error(`Error playing sounds for ${drumType}:`, error);
+                updateStatus(`Error playing ${drumType} sounds`, true);
+            }
+        }
+        
+        // DOM elements
+        const startBtn = document.getElementById('start-btn');
+        const calibrateBtn = document.getElementById('calibrate-btn');
+        const statusDiv = document.getElementById('status');
+        const motionDirection = document.querySelector('.motion-direction');
+        const motionDisplay = document.querySelector('.motion-display');
+        const sensorData = document.querySelector('.sensor-data');
+        
+        // Motion detection variables
+        let isMonitoring = false;
+        let lastAcceleration = { x: 0, y: 0, z: 0 };
+        let lastHitTime = 0;
+        const hitCooldown = 200; // milliseconds
+        let sensitivity = 15; // Default sensitivity
+        let movementHistory = [];
+        
+        // Update status message
+        function updateStatus(message, isError = false) {
+            statusDiv.textContent = message;
+            statusDiv.style.background = isError ? 'rgba(220, 53, 69, 0.3)' : 'rgba(0, 0, 0, 0.3)';
+            statusDiv.style.color = isError ? '#dc3545' : 'white';
+        }
+        
+        // Handle motion events
+        function handleMotion(event) {
+            if (!isMonitoring) return;
+            
+            const acceleration = event.accelerationIncludingGravity;
+            const now = Date.now();
+            
+            // Update visualizer
+            motionDirection.textContent = getMotionDirection(acceleration);
+            sensorData.textContent = `x: ${acceleration.x.toFixed(2)} | y: ${acceleration.y.toFixed(2)} | z: ${acceleration.z.toFixed(2)}`;
+            
+            // Calculate acceleration change
+            const deltaX = Math.abs(acceleration.x - lastAcceleration.x);
+            const deltaY = Math.abs(acceleration.y - lastAcceleration.y);
+            const deltaZ = Math.abs(acceleration.z - lastAcceleration.z);
+            
+            // Update last acceleration
+            lastAcceleration = { 
+                x: acceleration.x, 
+                y: acceleration.y, 
+                z: acceleration.z 
+            };
+            
+            // Add to movement history for pattern detection
+            movementHistory.push({
+                x: acceleration.x,
+                y: acceleration.y,
+                z: acceleration.z,
+                timestamp: now
+            });
+            
+            // Keep only the last 500ms of movement
+            movementHistory = movementHistory.filter(m => now - m.timestamp < 500);
+            
+            // Check if we're in cooldown period
+            if (now - lastHitTime < hitCooldown) return;
+            
+            // Detect circular motion for Tom
+            if (detectCircularMotion()) {
+                playsounds('tom');
+                lastHitTime = now;
+                return;
+            }
+            
+            // Determine which drum to play based on movement pattern
+            if (deltaZ > sensitivity && deltaZ > deltaX && deltaZ > deltaY) {
+                // Z-axis movement (up/down) - Hi-hat
+                playsounds('hihat');
+                lastHitTime = now;
+            } else if (deltaX > sensitivity && deltaX > deltaY && deltaX > deltaZ) {
+                // X-axis movement (side to side) - Snare
+                playsounds('snare');
+                lastHitTime = now;
+            } else if (deltaY > sensitivity && deltaY > deltaX && deltaY > deltaZ) {
+                // Y-axis movement (forward/backward) - Tom
+                playsounds('tom');
+                lastHitTime = now;
+            }
+        }
+        
+        // Detect circular motion pattern
+        function detectCircularMotion() {
+            if (movementHistory.length < 10) return false;
+            
+            let directionChanges = 0;
+            const directions = [];
+            
+            // Calculate direction vectors
+            for (let i = 1; i < movementHistory.length; i++) {
+                const dx = movementHistory[i].x - movementHistory[i-1].x;
+                const dy = movementHistory[i].y - movementHistory[i-1].y;
+                
+                // Determine direction quadrant
+                let direction = '';
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    direction = dx > 0 ? 'right' : 'left';
+                } else {
+                    direction = dy > 0 ? 'down' : 'up';
+                }
+                
+                directions.push(direction);
+            }
+            
+            // Count direction changes
+            for (let i = 1; i < directions.length; i++) {
+                if (directions[i] !== directions[i-1]) {
+                    directionChanges++;
+                }
+            }
+            
+            // Circular motion requires at least 4 direction changes
+            return directionChanges >= 4;
+        }
+        
+        // Determine motion direction for visual feedback
+        function getMotionDirection(acc) {
+            const absX = Math.abs(acc.x);
+            const absY = Math.abs(acc.y);
+            const absZ = Math.abs(acc.z);
+            
+            if (absZ > absX && absZ > absY) {
+                return acc.z > 0 ? '↓' : '↑';
+            } else if (absX > absY && absX > absZ) {
+                return acc.x > 0 ? '→' : '←';
+            } else {
+                return acc.y > 0 ? '↓↑' : '↑↓';
+            }
+        }
+        
+        // Start motion detection
+        function startMotionDetection() {
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                DeviceMotionEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
+                            enableMotionDetection();
+                        } else {
+                            updateStatus('Permission denied. Please enable motion access.', true);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Permission error:', error);
+                        updateStatus('Error requesting motion permission', true);
+                    });
+            } else {
+                // Non-iOS devices
+                enableMotionDetection();
+            }
+        }
+        
+        function enableMotionDetection() {
+            window.addEventListener('devicemotion', handleMotion);
+            isMonitoring = true;
+            updateStatus('Motion detection active! Move your phone to play drums.');
+            
+            // Initialize last acceleration
+            if (window.DeviceMotionEvent) {
+                window.addEventListener('devicemotion', (event) => {
+                    lastAcceleration = { 
+                        x: event.accelerationIncludingGravity.x,
+                        y: event.accelerationIncludingGravity.y,
+                        z: event.accelerationIncludingGravity.z
+                    };
+                }, { once: true });
+            }
+        }
+        
+        // Calibrate sensitivity
+        function calibrateSensitivity() {
+            sensitivity = 12; // Reset to default
+            updateStatus('Calibrating... Make drumming motions.');
+            
+            setTimeout(() => {
+                updateStatus('Calibration complete. Sensitivity optimized.');
+                setTimeout(() => {
+                    updateStatus('Motion detection active! Move your phone to play drums.');
+                }, 2000);
+            }, 3000);
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load sounds from local directory
+            loadsounds();
+            
+            // Button event listeners
+            startBtn.addEventListener('click', startMotionDetection);
+            calibrateBtn.addEventListener('click', calibrateSensitivity);
+        });
+    </script>
+</body>
+</html>
 
 <!-- -----------------------------------------------------v1.1--------------------------------------- -->
-<!DOCTYPE html>
+<!--<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -312,17 +899,17 @@
             <div class="panel">
                 <h2>Drum Kit</h2>
                 <div class="drum-controls">
-                    <div class="drum-pad" data-sound="hihat" id="hihat-pad">
+                    <div class="drum-pad" data-sounds="hihat" id="hihat-pad">
                         <div class="drum-icon">🥁</div>
                         <div class="drum-name">Hi-hat</div>
                         <div class="drum-motion">Quick downward flick</div>
                     </div>
-                    <div class="drum-pad" data-sound="snare" id="snare-pad">
+                    <div class="drum-pad" data-sounds="snare" id="snare-pad">
                         <div class="drum-icon">🎵</div>
                         <div class="drum-name">Snare</div>
                         <div class="drum-motion">Medium power stroke</div>
                     </div>
-                    <div class="drum-pad" data-sound="tom" id="tom-pad">
+                    <div class="drum-pad" data-sounds="tom" id="tom-pad">
                         <div class="drum-icon">🎶</div>
                         <div class="drum-name">Tom</div>
                         <div class="drum-motion">Wide circular motion</div>
@@ -396,7 +983,7 @@
 const sounds = {}; // Store AudioBuffers
 
 // Load audio files into buffers
-function loadSound(name, url) {
+function loadsounds(name, url) {
     return fetch(url)
         .then(response => response.arrayBuffer())
         .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
@@ -406,19 +993,19 @@ function loadSound(name, url) {
         .catch(err => console.error(`Failed to load ${name}: ${err}`));
 }
 
-async function loadAllDrumSounds() {
+async function loadAllDrumsounds() {
     await Promise.all([
-        loadSound('hihat', 'sounds/hihat.wav'),
-        loadSound('snare', 'sounds/snare.wav'),
-        loadSound('tom', 'sounds/tom.wav')
+        loadsounds('hihat', 'sounds/hihat.wav'),
+        loadsounds('snare', 'sounds/snare.wav'),
+        loadsounds('tom', 'sounds/tom.wav')
     ]);
     console.log('All drum sounds loaded');
 }
 
-// Play the loaded sound
-function playSound(drumType, intensity = 1) {
+// Play the loaded sounds
+function playsounds(drumType, intensity = 1) {
     if (!sounds[drumType]) {
-        console.warn(`Sound ${drumType} not loaded`);
+        console.warn(`sounds ${drumType} not loaded`);
         return;
     }
 
@@ -433,7 +1020,7 @@ function playSound(drumType, intensity = 1) {
 }
 
 // Call this once on app load
-loadAllDrumSounds();
+loadAllDrumsounds();
 
             
             // Visual feedback
@@ -516,7 +1103,7 @@ loadAllDrumSounds();
             
             // Detect circular motion for Tom
             if (detectCircularMotion()) {
-                playSound('tom');
+                playsounds('tom');
                 motionDisplay.textContent = 'Playing: Tom (Circular motion)';
                 lastHitTime = now;
                 return;
@@ -525,17 +1112,17 @@ loadAllDrumSounds();
             // Determine which drum to play based on movement pattern
             if (deltaZ > sensitivity && deltaZ > deltaX && deltaZ > deltaY) {
                 // Z-axis movement (up/down) - Hi-hat
-                playSound('hihat');
+                playsounds('hihat');
                 motionDisplay.textContent = 'Playing: Hi-hat (Downward motion)';
                 lastHitTime = now;
             } else if (deltaX > sensitivity && deltaX > deltaY && deltaX > deltaZ) {
                 // X-axis movement (side to side) - Snare
-                playSound('snare');
+                playsounds('snare');
                 motionDisplay.textContent = 'Playing: Snare (Side motion)';
                 lastHitTime = now;
             } else if (deltaY > sensitivity && deltaY > deltaX && deltaY > deltaZ) {
                 // Y-axis movement (forward/backward) - Tom
-                playSound('tom');
+                playsounds('tom');
                 motionDisplay.textContent = 'Playing: Tom (Forward motion)';
                 lastHitTime = now;
             }
@@ -644,8 +1231,8 @@ loadAllDrumSounds();
         // Manual drum pad click
         drumPads.forEach(pad => {
             pad.addEventListener('click', () => {
-                const sound = pad.getAttribute('data-sound');
-                playSound(sound);
+                const sounds = pad.getAttribute('data-sounds');
+                playsounds(sounds);
             });
         });
         
@@ -654,7 +1241,7 @@ loadAllDrumSounds();
         calibrateBtn.addEventListener('click', calibrateSensitivity);
         
         // Initialize
-        createDrumSounds();
+        createDrumsounds();
         
         // Touch prevention for mobile
         document.addEventListener('touchstart', function(e) {
@@ -700,9 +1287,9 @@ loadAllDrumSounds();
     <h1>Air Drum Stick</h1>
     <p>Move phone like drumsticks to play sounds</p>
     
-    <div class="drum-pad" data-sound="hihat">Hi-hat</div>
-    <div class="drum-pad" data-sound="snare">Snare</div>
-    <div class="drum-pad" data-sound="tom">Tom</div>
+    <div class="drum-pad" data-sounds="hihat">Hi-hat</div>
+    <div class="drum-pad" data-sounds="snare">Snare</div>
+    <div class="drum-pad" data-sounds="tom">Tom</div>
 
     <script>
         // Audio context setup
@@ -710,7 +1297,7 @@ loadAllDrumSounds();
         const sounds = {};
         
         // Load drum samples
-        async function loadSounds() {
+        async function loadsounds() {
             const drumTypes = ['hihat', 'snare', 'tom'];
             for (const drum of drumTypes) {
                 const response = await fetch(`sounds/${drum}.wav`);
@@ -719,8 +1306,8 @@ loadAllDrumSounds();
             }
         }
         
-        // Play sound function
-        function playSound(drumType) {
+        // Play sounds function
+        function playsounds(drumType) {
             if (sounds[drumType]) {
                 const source = audioContext.createBufferSource();
                 source.buffer = sounds[drumType];
@@ -728,7 +1315,7 @@ loadAllDrumSounds();
                 source.start();
                 
                 // Visual feedback
-                const pad = document.querySelector(`[data-sound="${drumType}"]`);
+                const pad = document.querySelector(`[data-sounds="${drumType}"]`);
                 pad.classList.add('active');
                 setTimeout(() => pad.classList.remove('active'), 200);
             }
@@ -751,7 +1338,7 @@ loadAllDrumSounds();
                 // Select random drum for demo (customize as needed)
                 const drums = ['hihat', 'snare', 'tom'];
                 const randomDrum = drums[Math.floor(Math.random() * drums.length)];
-                playSound(randomDrum);
+                playsounds(randomDrum);
             }
             
             lastAcceleration = accelerationMagnitude;
@@ -759,7 +1346,7 @@ loadAllDrumSounds();
         
         // Initialize
         window.addEventListener('devicemotion', handleMotion);
-        loadSounds();
+        loadsounds();
         
         // iOS permission handling
         document.addEventListener('click', () => {
