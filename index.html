@@ -1,4 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motion Drum Kit</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        header {
+            margin: 30px 0;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            background: linear-gradient(to right, #ff8a00, #da1b60);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+        
+        .permission-box {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 500px;
+        }
+        
+        .permission-btn {
+            background: linear-gradient(to right, #ff8a00, #da1b60);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(218, 27, 96, 0.4);
+        }
+        
+        .permission-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(218, 27, 96, 0.6);
+        }
+        
+        .permission-btn:active {
+            transform: translateY(1px);
+        }
+        
+        .drum-kit {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin: 40px 0;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .drum-pad {
+            width: 150px;
+            height: 150px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .drum-pad:hover {
+            transform: scale(1.05);
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .drum-pad.active {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(218, 27, 96, 0.8);
+            background: rgba(218, 27, 96, 0.3);
+        }
+        
+        .drum-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-top: 10px;
+            text-transform: uppercase;
+        }
+        
+        .drum-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+        
+        .motion-display {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: none;
+        }
+        
+        .motion-values {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .motion-value {
+            text-align: center;
+            margin: 10px;
+        }
+        
+        .value-title {
+            font-size: 1rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+        
+        .value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .instructions {
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            max-width: 600px;
+        }
+        
+        .instructions h2 {
+            margin-bottom: 15px;
+            color: #ff8a00;
+        }
+        
+        .instructions ul {
+            text-align: left;
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+        
+        .note {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 600px) {
+            .drum-pad {
+                width: 120px;
+                height: 120px;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Mobile Motion Drum Kit</h1>
+            <p class="subtitle">Tilt your device to play drum sounds!</p>
+        </header>
+        
+        <div class="permission-box" id="permissionBox">
+            <h2>Motion Access Required</h2>
+            <p>This drum kit uses your device's motion sensors to play sounds when you tilt your phone.</p>
+            <p>Please allow motion access when prompted.</p>
+            <button class="permission-btn" id="permissionBtn">Enable Motion Sensors</button>
+        </div>
+        
+        <div class="drum-kit" id="drumKit">
+            <div class="drum-pad" data-sound="tom">
+                <div class="drum-icon">🥁</div>
+                <div class="drum-name">Tom</div>
+            </div>
+            <div class="drum-pad" data-sound="hihat">
+                <div class="drum-icon">🔔</div>
+                <div class="drum-name">Hi-Hat</div>
+            </div>
+            <div class="drum-pad" data-sound="snare">
+                <div class="drum-icon">🎵</div>
+                <div class="drum-name">Snare</div>
+            </div>
+        </div>
+        
+        <div class="motion-display" id="motionDisplay">
+            <h2>Device Orientation</h2>
+            <div class="motion-values">
+                <div class="motion-value">
+                    <div class="value-title">Beta (Front/Back)</div>
+                    <div class="value" id="betaValue">0°</div>
+                </div>
+                <div class="motion-value">
+                    <div class="value-title">Gamma (Left/Right)</div>
+                    <div class="value" id="gammaValue">0°</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h2>How to Play:</h2>
+            <ul>
+                <li><strong>Tom Sound:</strong> Tilt your device forward (towards you)</li>
+                <li><strong>Hi-Hat Sound:</strong> Tilt your device to the left</li>
+                <li><strong>Snare Sound:</strong> Tilt your device to the right</li>
+                <li>Tap on drum pads to test sounds manually</li>
+            </ul>
+            <div class="note">
+                <strong>Note:</strong> For best results, hold your device in landscape mode. 
+                Make sure you're on a device with motion sensors (smartphone or tablet).
+            </div>
+        </div>
+    </div>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elements
+            const permissionBox = document.getElementById('permissionBox');
+            const permissionBtn = document.getElementById('permissionBtn');
+            const drumKit = document.getElementById('drumKit');
+            const motionDisplay = document.getElementById('motionDisplay');
+            const betaValue = document.getElementById('betaValue');
+            const gammaValue = document.getElementById('gammaValue');
+            const drumPads = document.querySelectorAll('.drum-pad');
+            
+            // Audio elements
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            let sounds = {
+                tom: null,
+                hihat: null,
+                snare: null
+            };
+            
+            // Motion variables
+            let lastPlayed = {
+                tom: 0,
+                hihat: 0,
+                snare: 0
+            };
+            const cooldown = 500; // milliseconds
+            let motionEnabled = false;
+            
+            // Load audio buffers
+            async function loadSounds() {
+                const soundFiles = {
+                    tom: 'sounds/tom.wav',
+                    hihat: 'sounds/hihat.wav',
+                    snare: 'sounds/snare.wav'
+                };
+                
+                for (const [soundName, url] of Object.entries(soundFiles)) {
+                    try {
+                        const response = await fetch(url);
+                        const arrayBuffer = await response.arrayBuffer();
+                        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                        sounds[soundName] = audioBuffer;
+                    } catch (error) {
+                        console.error(`Error loading ${soundName} sound:`, error);
+                        // Fallback to oscillator sound
+                        sounds[soundName] = soundName;
+                    }
+                }
+            }
+            
+            // Play sound
+            function playSound(soundName) {
+                const now = Date.now();
+                
+                // Cooldown check
+                if (now - lastPlayed[soundName] < cooldown) return;
+                
+                lastPlayed[soundName] = now;
+                
+                // Visual feedback
+                const pad = document.querySelector(`.drum-pad[data-sound="${soundName}"]`);
+                pad.classList.add('active');
+                setTimeout(() => pad.classList.remove('active'), 200);
+                
+                // Play sound
+                if (typeof sounds[soundName] === 'string') {
+                    // Fallback oscillator sound
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    // Different frequencies for different drums
+                    if (soundName === 'tom') oscillator.frequency.value = 150;
+                    if (soundName === 'hihat') oscillator.frequency.value = 800;
+                    if (soundName === 'snare') oscillator.frequency.value = 250;
+                    
+                    gainNode.gain.value = 0.3;
+                    oscillator.start();
+                    
+                    setTimeout(() => {
+                        oscillator.stop();
+                    }, 200);
+                } else {
+                    // Play the actual sound
+                    const source = audioContext.createBufferSource();
+                    source.buffer = sounds[soundName];
+                    source.connect(audioContext.destination);
+                    source.start();
+                }
+            }
+            
+            // Motion event handler
+            function handleMotion(event) {
+                if (!motionEnabled) return;
+                
+                const beta = event.beta;  // Front/Back tilt (-180 to 180)
+                const gamma = event.gamma; // Left/Right tilt (-90 to 90)
+                
+                // Update display
+                betaValue.textContent = Math.round(beta) + '°';
+                gammaValue.textContent = Math.round(gamma) + '°';
+                
+                // Trigger sounds based on tilt
+                if (beta > 30) { // Tilted forward
+                    playSound('tom');
+                }
+                if (gamma < -20) { // Tilted left
+                    playSound('hihat');
+                }
+                if (gamma > 20) { // Tilted right
+                    playSound('snare');
+                }
+            }
+            
+            // Request motion permission
+            permissionBtn.addEventListener('click', async function() {
+                try {
+                    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                        const permission = await DeviceOrientationEvent.requestPermission();
+                        if (permission === 'granted') {
+                            enableMotion();
+                        } else {
+                            alert('Motion permission is required for this drum kit to work.');
+                        }
+                    } else {
+                        // Non-iOS devices
+                        enableMotion();
+                    }
+                } catch (error) {
+                    console.error('Error requesting motion permission:', error);
+                    alert('Error accessing motion sensors. Please ensure your device supports motion events.');
+                }
+            });
+            
+            // Enable motion detection
+            function enableMotion() {
+                window.addEventListener('deviceorientation', handleMotion);
+                permissionBox.style.display = 'none';
+                drumKit.style.opacity = '1';
+                motionDisplay.style.display = 'block';
+                motionEnabled = true;
+                
+                // Unlock audio on iOS
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+            }
+            
+            // Click handlers for drum pads
+            drumPads.forEach(pad => {
+                pad.addEventListener('click', () => {
+                    const soundName = pad.getAttribute('data-sound');
+                    playSound(soundName);
+                });
+            });
+            
+            // Initialize
+            loadSounds();
+            
+            // Show drum kit if already have permission
+            if (typeof DeviceOrientationEvent !== 'undefined' && 
+                typeof DeviceOrientationEvent.requestPermission !== 'function') {
+                // Non-iOS devices - try to enable immediately
+                enableMotion();
+            }
+        });
+    </script>
+</body>
+</html>
 <!-- -----------------------------------------------------v1.1--------------------------------------- -->
 <!--<!DOCTYPE html>
 <html lang="en">
@@ -674,7 +1113,7 @@ loadAllDrumsounds();
 </html>
 
 
-<!-- <---------------------v1.0---------------------  -->
+<!-- <---------------------v1.0---------------------  
 <!DOCTYPE html>
 <html>
 <head>
