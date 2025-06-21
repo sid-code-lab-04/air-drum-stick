@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Air Drum Stick</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        .drum-pad { 
+            display: inline-block; 
+            width: 100px; 
+            height: 100px; 
+            margin: 10px; 
+            background: #3498db; 
+            border-radius: 50%; 
+            line-height: 100px; 
+            color: white; 
+            font-weight: bold;
+        }
+        .active { background: #e74c3c; transform: scale(1.1); }
+    </style>
+</head>
+<body>
+    <h1>Air Drum Stick</h1>
+    <p>Move phone like drumsticks to play sounds</p>
+    
+    <div class="drum-pad" data-sound="hihat">Hi-hat</div>
+    <div class="drum-pad" data-sound="snare">Snare</div>
+    <div class="drum-pad" data-sound="tom">Tom</div>
+
+    <script>
+        // Audio context setup
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const sounds = {};
+        
+        // Load drum samples
+        async function loadSounds() {
+            const drumTypes = ['hihat', 'snare', 'tom'];
+            for (const drum of drumTypes) {
+                const response = await fetch(`sounds/${drum}.wav`);
+                const arrayBuffer = await response.arrayBuffer();
+                sounds[drum] = await audioContext.decodeAudioData(arrayBuffer);
+            }
+        }
+        
+        // Play sound function
+        function playSound(drumType) {
+            if (sounds[drumType]) {
+                const source = audioContext.createBufferSource();
+                source.buffer = sounds[drumType];
+                source.connect(audioContext.destination);
+                source.start();
+                
+                // Visual feedback
+                const pad = document.querySelector(`[data-sound="${drumType}"]`);
+                pad.classList.add('active');
+                setTimeout(() => pad.classList.remove('active'), 200);
+            }
+        }
+        
+        // Motion detection
+        let lastAcceleration = 0;
+        const threshold = 15; // Sensitivity adjustment
+        
+        function handleMotion(event) {
+            const acceleration = event.accelerationIncludingGravity;
+            const accelerationMagnitude = Math.sqrt(
+                acceleration.x ** 2 + 
+                acceleration.y ** 2 + 
+                acceleration.z ** 2
+            );
+            
+            // Detect "hit" motion
+            if (Math.abs(accelerationMagnitude - lastAcceleration) > threshold) {
+                // Select random drum for demo (customize as needed)
+                const drums = ['hihat', 'snare', 'tom'];
+                const randomDrum = drums[Math.floor(Math.random() * drums.length)];
+                playSound(randomDrum);
+            }
+            
+            lastAcceleration = accelerationMagnitude;
+        }
+        
+        // Initialize
+        window.addEventListener('devicemotion', handleMotion);
+        loadSounds();
+        
+        // iOS permission handling
+        document.addEventListener('click', () => {
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                DeviceMotionEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
+                            window.addEventListener('devicemotion', handleMotion);
+                        }
+                    });
+            }
+        });
+    </script>
+</body>
+</html>
